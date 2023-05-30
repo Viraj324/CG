@@ -1,332 +1,203 @@
-#include<iostream>
-#include<GL/glut.h>
-#include<math.h>
+#include <iostream>
+#include <GL/glut.h>
+#include <math.h>
+
 using namespace std;
 
-int xl=50,xh=200,yl=50,yh=200;
-int flag=0;
-float u1,v1,u2,v2;
+//Defalut radius of circle 
+int cx=300,cy=300,R=70;
+bool flag=1;
 
-//defining the structure code to get - opcodes.
-struct code
-{
-  int t,b,r,l;
+//Color struct 
+struct color{
+	GLubyte r,g,b;
 };
 
-
+//init function for init.
 void init()
 {
- //set the background color.
- glClearColor(1,1,1,0);
- 
- //activate the color_buffer_bit and assign the background color mentioned in glClearColor.
- glClear(GL_COLOR_BUFFER_BIT);
- 
- //set the pixel color as black.
- glColor3f(0,0,0);
-}
-
-//get the opcodes (tbrl).
-code get_code(int u,int v)
-{
-	code c={0,0,0,0};
-	
-	if(u<xl)
-	c.l=1;
-	
-	if(u>xh)
-	c.r=1;
-	
-	if(v<yl)
-	c.b=1;
-	
-	if(v>yh)
-	c.t=1;
-	
-	return c;
-}
-/*
-//	#BRESENHEM LINE DRAWING ALOGORITHM
-void line(int u1,int v1,int u2,int v2)
-{
-  int dx,dy,p,xi=1,yi=1;
-   
-  dx=u2-u1;
-  dy=v2-v1;
-  
-  if(dx<0)
-  {
-  	dx=-dx;
-  	xi=-1;
-  }
-  
-  if(dy<0)
-  {
-  	dy=-dy;
-  	yi=-1;
-  }
-  
-  glBegin(GL_POINTS);
-  glVertex2i(u1,v1);
-  if(dx>dy)
-  {
-  p=(2*dy)-dx;
-     while(u1!=u2)
-     {
-     	if(p<=0)
-     	{
-     	 p+=2*dy;
-     	}
-     	else
-     	{
-     	 p+=2*(dy-dx);
-     	 v1+=yi;
-     	}
-     	
-     	u1+=xi;
-     	glVertex2i(u1,v1);
-     }
-  }
-  
-  else
-  {
-    p=(2*dx)-dy;
-     while(v1!=v2)
-     {
-     	if(p<=0)
-     	{
-     	 p+=2*dx;
-     	}
-     	else
-     	{
-     	 p+=2*(dx-dy);
-     	 u1+=xi;
-     	}
-     	
-     	v1+=yi;
-     	glVertex2i(u1,v1);
-     }
-  }
-  
-  glEnd();
-  glFlush();
-}
-*/
-//	#DDA-LINE DRAWING ALGORITHM
-void line(float u1,float v1,float u2,float v2)
-{
-
- float dx,dy,x=u1,y=v1,xi,yi;
- int steps,i;
- 
- dx=u2-u1;
- dy=v2-v1;
- 
- steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
- 
- xi=dx/(float)steps;
- yi=dy/(float)steps;
- 
- glBegin(GL_POINTS);
- glVertex2f(x,y);
- 
- for(i=0;i<steps;i++)
- {
- 	x+=xi;
- 	y+=yi;
- 	
- 	glVertex2f(x,y); 
- }
- 
- glEnd();
- glFlush();
- 
-}
-
-//draw the window
-void draw_window()
-{
-	line(50,50,200,50);
-	line(50,50,50,200);
-	line(200,50,200,200);
-	line(50,200,200,200);
-}
-//mouse function to draw the line.
-void mymouse(int button,int state,int x,int y)
-{
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	gluOrtho2D(0,600,0,600);
 	glColor3f(0,0,0);
-	if(state==GLUT_DOWN && flag==0)
+}
+
+//ploat the pixel (x,y)
+void plotpixel(int x,int y)
+{
+	glPointSize(1.5);
+	glBegin(GL_POINTS);
+		glVertex2i(x,y);
+	glEnd();
+	glFlush();
+}
+
+//ploat the points using the circle sym.
+void octant(int xc,int yc,int x,int y)
+{
+	plotpixel(xc+x,yc+y);
+	plotpixel(xc+y,yc+x);
+	plotpixel(xc+y,yc-x);
+	plotpixel(xc+x,yc-y);
+
+	plotpixel(xc-x,yc-y);
+	plotpixel(xc-y,yc-x);
+	plotpixel(xc-y,yc+x);
+	plotpixel(xc-x,yc+y);
+	
+}
+
+//mid point circle drawing 
+void circleMP(int xc,int yc,int r)
+{
+	int p=1-r,x=0,y=r;
+	//loop til the x become y equal to radius (r,r)
+	while(x<y)
 	{
-		u1=x; 
-		v1=480-y;
+		octant(xc,yc,x,y);
+		x++;
+		if(p>0)			//if p>0 decrement the y and 2(x-y)+1
+			y--,p+=2*(x-y)+1;
+		else			//if p<=0 add 2x+1 to p
+			p+=2*x+1;
+	}
+}
+
+//convert the rad to deg
+double ang(int q)
+{
+	return (double)q*3.142/180;
+}
+
+void plottofill(int x,int y,color c)
+{
+	glPointSize(1.0);
+	glColor3ub(c.r,c.g,c.b);
+	glBegin(GL_POINTS);
+		glVertex2i(x,y);
+	glEnd();
+	glFlush();
+}
+void seedfill(int x,int y,color oc,color nc)
+{
+	color c;
+	glReadPixels(x,y,1,1,GL_RGB,GL_UNSIGNED_BYTE,&c);
+	if(c.r==oc.r&&c.b==oc.b&&c.g==oc.g)
+	{
+		plottofill(x,y,nc);
+		seedfill(x+1,y,oc,nc);
+		seedfill(x-1,y,oc,nc);
+		seedfill(x,y+1,oc,nc);
+		seedfill(x,y-1,oc,nc);
+	}
+}
+
+//Draw all the Cirlces
+void drawcircles(int x,int y,int r)
+{
+	circleMP(x,y,r);
+	
+	circleMP(x+2*r,y,r);
+	circleMP(x-2*r,y,r);
+	
+	circleMP(x+2*r*cos(ang(60)),y+2*r*sin(ang(60)),r);
+	circleMP(x-2*r*cos(ang(60)),y+2*r*sin(ang(60)),r);
+	circleMP(x-2*r*cos(ang(60)),y-2*r*sin(ang(60)),r);
+	circleMP(x+2*r*cos(ang(60)),y-2*r*sin(ang(60)),r);	
+	
+	circleMP(x,y,3*r);
+	
+	circleMP(x,y,(float)2*r-r*(0.20));
+}
+
+//Display Function
+void draw()
+{
+	
+}
+
+//Clear the whole screen
+void clear_screen()
+{
+	 glClearColor(1,1,1,0);
+	 glClear(GL_COLOR_BUFFER_BIT);	
+}
+
+//Mouse click function
+void mouseClick(int button,int state,int x,int y)
+{	
+	cout<<"Mouse Clicked"<<endl;
+	//First point to get the xc,yc
+	if(flag&&button==GLUT_LEFT_BUTTON&&state==GLUT_DOWN)
+	{
+		cout<<"Center Found"<<endl;
+		cx=x,cy=600-y;
+		glPointSize(5.0);
+		glColor3f(1,0,0);
+		glBegin(GL_POINTS);
+			glVertex2i(x,600-y);
+		glEnd();
+		glFlush();
+		flag=0;	
+	}
+	//find the radius of the circle
+	else if (!flag&&button==GLUT_LEFT_BUTTON&&state==GLUT_DOWN)
+	{
+		cout<<"Ohhho !!, I got a radius"<<endl;
+		glColor3f(0,0,1);
+		glPointSize(1.0);
+		glBegin(GL_POINTS);
+			glVertex2i(x,600-y);
+		glEnd();
+		glFlush();
+		R=abs(x-cx);
 		flag=1;
-		
-	}
-	else if(state==GLUT_DOWN && flag==1)
-	{
-		u2=x;
-		v2=480-y;
-		flag=2;
-		line(u1,v1,u2,v2);
 	}
 }
-//cohen-sutherland algorithm to clip the line
-void cohen()
+
+
+//Menu function
+void menu(int ch)
 {
-	code c1,c2,c;
-	float m;
-	int xi,yi,flag;
-	
-	//get the slope of line
-	m=(v2-v1)/(u2-u1);
-	
-	//get the opcodes of both the co-ordinates in c1 and c2.
-	c1=get_code(u1,v1);
-	c2=get_code(u2,v2);
-	
-	while(1)
-	{	
-		//if line inside the window , draw the line as it is.
-		if( c1.t==0 && c2.t==0 && c1.b==0 && c2.b==0 && c1.r==0 && c2.r==0 && c1.l==0 && c2.l==0 )
-		break;
-		
-		//if the ANDING of opcodes is non-zero then don't draw the line. 
-		else if( ( (c1.t  && c2.t) || (c1.b && c2.b) || (c1.r && c2.r) || (c1.l && c2.l) ) !=0)
-		{
-			u1=v1=u2=v2=0;
+	color oc={255,255,255};
+	color nc={255,0,0};
+	switch(ch)
+	{
+		case 1:
+			drawcircles(cx,cy,R);
 			break;
-		}
-		
-		//if line partially inside the window changing the co-ordinates as per following conditions.
-		else
-		{
-			if( c1.l==1 || c2.l==1)
-			{
-				xi=xl;
-				yi=v1+m*(xl-u1);
-				
-				if(c1.l==1)
-				flag=0;
-				
-				else
-				flag=1;
-				
-			}
-			
-			else if( c1.r==1 || c2.r==1 )
-			{
-				xi=xh;
-				yi=v1+m*(xh-u1);
-				
-				if(c1.r==1)
-				flag=0;
-				
-				else
-				flag=1;
-			}
-			
-			else if( c1.b==1 || c2.b==1 )
-			{
-				xi=u1+((1/m)*(yl-v1));
-				yi=yl;
-				
-				if(c1.b==1)
-				flag=0;
-				
-				else
-				flag=1;
-			}
-			else if( c1.t==1 || c2.t==1 )
-			{
-				xi=u1+((1/m)*(yh-v1));
-				yi=yh;
-				
-				if(c1.t==1)
-				flag=0;
-				
-				else
-				flag=1;
-			}
-			
-			//get the code of xi and yi.
-			c=get_code(xi,yi);
-			
-			if(flag==0)
-			{
-				u1=xi;
-				v1=yi;
-				c1=c;
-			}
-			else if(flag==1)
-			{
-				u2=xi;
-				v2=yi;
-				c2=c;
-			}
-			
-		}//end_else
-	
-	}//end_while
-	
-	//draw_the window and clipped line.
-	draw_window();
-	line(u1,v1,u2,v2);	
+		case 2:
+			clear_screen();
+			break;
+		case 3:
+			cout<<"Fill the Centered Circle"<<endl;
+			seedfill(cx+5,cy,oc,nc);
+			break;
+		case 4:
+			exit(0);
+			break;
+	}
+
 }
 
-void mykey(char unsigned key,int x,int y)
+
+int main(int agrc,char ** agrv)
 {
-//press 'c' to clip the line.
-	if(key=='c')
-	{
-	  init();
-	  cohen();
-	}
-	
-//press 'r' to reset the window.
-	if(key=='r')
-	{
-	  init();
-	  draw_window();
-	  flag=0;
-	}
+	glutInit(&agrc,agrv);
+	glutInitDisplayMode(GLUT_SINGLE|GLUT_RGB);
+	glutInitWindowPosition(0,0);
+	glutInitWindowSize(600,600);
+	glutCreateWindow("Circle");
+	init();
+	glutDisplayFunc(draw);
+	glutCreateMenu(menu);
+		glutAddMenuEntry("Draw",1);
+		glutAddMenuEntry("Clear",2);
+		glutAddMenuEntry("Color Fill",3);
+		glutAddMenuEntry("Exit",4);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+	glutMouseFunc(mouseClick);
+	glutMainLoop();
 }
 
-int main(int argc,char **argv)
-{
-//initializing the glut-library.
-  glutInit(&argc, argv);
-  
-//set the display mode as GLUT_SINGLE for single buffer window.
-  glutInitDisplayMode(GLUT_SINGLE);
-  
-//set the size of window. 
-  glutInitWindowSize(640,480);
 
-//set the window position.
-  glutInitWindowPosition(0,0);
-
-//creating the window and assigning the name. 
-  glutCreateWindow("Line_Clipping");
-  
-//declaring the co-ordinates of ortho-2d function i.e getting the orthographic projection.
-  gluOrtho2D(0,640,0,480);
-  
-//initialize the window created with background color,set the pixel color.
-  init();
-  glFlush();
-
-//draw the window.
-  draw_window();
-  
-//get the line using mouse. 
-  glutMouseFunc(mymouse);
-
-//clip the line by pressing 'c' and also the reset the window by pressing 'r'. 
-  glutKeyboardFunc(mykey);
-  
-//keeping the window open. 
-  glutMainLoop();
-  
-  return 0;
-  
-}//end_main
