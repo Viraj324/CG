@@ -59,9 +59,9 @@ void mutlti3x3(double ET[3][3],double temp[3][3]){
 void trasnlationET(){
 	double tx,ty,temp[3][3];
 	cout<<"\nTranslating Equilateral Triangle";
-	cout<<"\nEnter tx";
+	cout<<"\nEnter tx : ";
 	cin>>tx;
-	cout<<"\nEnter ty";
+	cout<<"\nEnter ty : ";
 	cin>>ty;
 	
 	temp[3][3] = {0};
