@@ -1,5 +1,5 @@
 //For the equilateral Triangle, the point of origin is given as (0, 0) and the size(length) of one side is given as 50px
-//Same cordinates for Rotaton and Translation
+//Same cordinates for Rotaton ,Translation,Scaling
 
 #include <GL/glut.h>
 #include <iostream>
